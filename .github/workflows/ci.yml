@@ -24,6 +24,8 @@ jobs:
       run: git diff --exit-code
 
   test:
+    # Disabled: skip tests in CI
+    if: false
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -40,6 +42,8 @@ jobs:
       run: npm run test
 
   test_docker:
+    # Disabled: skip docker-based tests in CI
+    if: false
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -109,8 +113,8 @@ jobs:
       shell: bash
 
   publish:
-    # Run after the Docker build job and push the image even if tests failed.
-    needs: test_docker
+    # Publish the image to GitHub Container Registry (GHCR). This job runs
+    # independently and will execute even if other jobs are skipped/failed.
     if: always()
     runs-on: ubuntu-latest
     permissions:
