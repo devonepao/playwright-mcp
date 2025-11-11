@@ -52,14 +52,17 @@ ARG PLAYWRIGHT_BROWSERS_PATH
 ARG USERNAME=node
 ENV NODE_ENV=production
 ENV PLAYWRIGHT_MCP_OUTPUT_DIR=/tmp/playwright-output
+ENV PORT=8080
 
 # Set the correct ownership for the runtime user on production `node_modules`
 RUN chown -R ${USERNAME}:${USERNAME} node_modules
 
 USER ${USERNAME}
 
+EXPOSE ${PORT}
+
 COPY --from=browser --chown=${USERNAME}:${USERNAME} ${PLAYWRIGHT_BROWSERS_PATH} ${PLAYWRIGHT_BROWSERS_PATH}
 COPY --chown=${USERNAME}:${USERNAME} cli.js package.json ./
 
 # Run in headless and only with chromium (other browsers need more dependencies not included in this image)
-ENTRYPOINT ["node", "cli.js", "--headless", "--browser", "chromium", "--no-sandbox"]
+ENTRYPOINT ["/bin/sh", "-c", "node cli.js --headless --browser chromium --no-sandbox --listen 0.0.0.0:${PORT}"]
