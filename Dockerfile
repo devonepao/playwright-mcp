@@ -52,6 +52,11 @@ ARG PLAYWRIGHT_BROWSERS_PATH
 ARG USERNAME=node
 ENV NODE_ENV=production
 ENV PLAYWRIGHT_MCP_OUTPUT_DIR=/tmp/playwright-output
+
+## Default container port. This will be used when neither WEBSITES_PORT (Azure) nor
+## a runtime PORT environment variable is provided. Azure App Service sets
+## WEBSITES_PORT for container applications when it needs to route traffic to a
+## non-standard port.
 ENV PORT=8080
 
 # Set the correct ownership for the runtime user on production `node_modules`
@@ -59,11 +64,20 @@ RUN chown -R ${USERNAME}:${USERNAME} node_modules
 
 USER ${USERNAME}
 
-EXPOSE ${PORT}
+## Expose common ports that might be used by this image. We expose the original
+## default (8080) and the legacy port (8931) so the intent is clear in the image
+## metadata. Azure will still route to whatever port is set in `WEBSITES_PORT`.
+EXPOSE 8080 8931
 
 COPY --from=browser --chown=${USERNAME}:${USERNAME} ${PLAYWRIGHT_BROWSERS_PATH} ${PLAYWRIGHT_BROWSERS_PATH}
 COPY --chown=${USERNAME}:${USERNAME} cli.js package.json ./
 
 # Run in headless and only with chromium (other browsers need more dependencies not included in this image)
 # Use --host and --port (supported flags) instead of the unsupported --listen flag.
-ENTRYPOINT ["/bin/sh", "-c", "node cli.js --headless --browser chromium --no-sandbox --host 0.0.0.0 --port ${PORT}"]
+ENTRYPOINT ["/bin/sh", "-c", "PORT_TO_USE=${WEBSITES_PORT:-${PORT:-8080}}; echo \"Starting mcp-server on 0.0.0.0:${PORT_TO_USE}\"; node cli.js --headless --browser chromium --no-sandbox --host 0.0.0.0 --port ${PORT_TO_USE}"]
+
+# Copy a lightweight healthcheck script and register Docker HEALTHCHECK. The
+# healthcheck queries /mcp on the chosen port (WEBSITES_PORT -> PORT -> 8080).
+COPY --chown=${USERNAME}:${USERNAME} healthcheck.js ./
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD node ./healthcheck.js || exit 1
