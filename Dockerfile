@@ -65,4 +65,5 @@ COPY --from=browser --chown=${USERNAME}:${USERNAME} ${PLAYWRIGHT_BROWSERS_PATH} 
 COPY --chown=${USERNAME}:${USERNAME} cli.js package.json ./
 
 # Run in headless and only with chromium (other browsers need more dependencies not included in this image)
-ENTRYPOINT ["/bin/sh", "-c", "node cli.js --headless --browser chromium --no-sandbox --listen 0.0.0.0:${PORT}"]
+# Use --host and --port (supported flags) instead of the unsupported --listen flag.
+ENTRYPOINT ["/bin/sh", "-c", "node cli.js --headless --browser chromium --no-sandbox --host 0.0.0.0 --port ${PORT}"]
