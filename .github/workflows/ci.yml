@@ -139,6 +139,12 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ steps.ghcr_token.outputs.token }}
 
+    - name: Set up Docker Buildx (container driver)
+      uses: docker/setup-buildx-action@v3
+      with:
+        driver: docker-container
+        use: true
+
     - name: Build and push image to GHCR
       uses: docker/build-push-action@v6
       with:
