@@ -64,17 +64,22 @@ RUN chown -R ${USERNAME}:${USERNAME} node_modules
 
 USER ${USERNAME}
 
-## Expose common ports that might be used by this image. We expose the original
-## default (8080) and the legacy port (8931) so the intent is clear in the image
-## metadata. Azure will still route to whatever port is set in `WEBSITES_PORT`.
-EXPOSE 8080 8931
+## Expose the primary container port. Azure will still route to whatever port is
+## set in `WEBSITES_PORT` if it differs from this.
+EXPOSE 8080
 
 COPY --from=browser --chown=${USERNAME}:${USERNAME} ${PLAYWRIGHT_BROWSERS_PATH} ${PLAYWRIGHT_BROWSERS_PATH}
 COPY --chown=${USERNAME}:${USERNAME} cli.js package.json ./
 
+# To run this container and access the server from your host machine,
+# you need to map the container's port 8080 to a port on your host.
+# Example: docker run -p 8080:8080 <image_name>
+#
+# The server will then be accessible at http://localhost:8080
+#
 # Run in headless and only with chromium (other browsers need more dependencies not included in this image)
 # Use --host and --port (supported flags) instead of the unsupported --listen flag.
-ENTRYPOINT ["/bin/sh", "-c", "PORT_TO_USE=${WEBSITES_PORT:-${PORT:-8080}}; echo \"Starting mcp-server on 0.0.0.0:${PORT_TO_USE}\"; node cli.js --headless --browser chromium --no-sandbox --host 0.0.0.0 --port ${PORT_TO_USE}"]
+ENTRYPOINT ["/bin/sh", "-c", "PORT_TO_USE=${WEBSITES_PORT:-8080}; echo \"Starting mcp-server on 0.0.0.0:${PORT_TO_USE}\"; node cli.js --headless --browser chromium --no-sandbox --host 0.0.0.0 --port ${PORT_TO_USE}"]
 
 # Copy a lightweight healthcheck script and register Docker HEALTHCHECK. The
 # healthcheck queries /mcp on the chosen port (WEBSITES_PORT -> PORT -> 8080).

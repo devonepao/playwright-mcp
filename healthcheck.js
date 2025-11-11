@@ -7,7 +7,7 @@ const path = '/mcp';
 const timeout = 4000; // ms
 
 const options = {
-  hostname: '127.0.0.1',
+  hostname: 'localhost',
   port: Number(port),
   path,
   method: 'GET',
